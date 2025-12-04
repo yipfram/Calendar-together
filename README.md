@@ -1,71 +1,36 @@
-# Calendar Together
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Collaborative calendar visualization tool for groups.
+## Getting Started
 
-## 🚀 Project Status
+First, run the development server:
 
-**Current Phase**: Phase 0 (Project Setup)
-**Last Action**: Initialized Turborepo structure and configuration files.
-**Blocker**: `npm` / `pnpm` not found on the current machine.
-
-### ✅ Completed
-- Defined Technical Stack (Vite + React + Tailwind + Fastify + Prisma).
-- Created Monorepo structure (Turborepo).
-- Created root configuration files:
-  - `package.json`
-  - `turbo.json`
-  - `pnpm-workspace.yaml`
-  - `.gitignore`
-- Created directory structure for `apps/` and `packages/`.
-- Documented Implementation Plan (`docs/implementation_plan.md`).
-- Documented Task List (`docs/task.md`).
-
-### 🚧 Pending / Next Steps
-1. **Install Dependencies**: Need a machine with Node.js and pnpm installed.
-2. **Initialize Apps**:
-   - `apps/web`: Initialize Vite + React + Tailwind.
-   - `apps/api`: Initialize Fastify + Prisma.
-3. **Setup Database**: Install PostgreSQL and Redis (or Memurai) locally.
-
----
-
-## 💻 How to Resume Work (New Machine)
-
-### 1. Prerequisites
-Ensure you have the following installed:
-- **Node.js** (LTS v20+)
-- **pnpm** (`npm install -g pnpm`)
-- **PostgreSQL 16** (Local server running on port 5432)
-- **Redis** (Local server or Memurai running on port 6379)
-
-### 2. Setup Project
 ```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Initialize Frontend (if empty)
-cd apps/web
-pnpm create vite . --template react
-pnpm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-
-# 3. Initialize Backend (if empty)
-cd ../api
-npm init -y
-pnpm add fastify @prisma/client
-pnpm add -D prisma typescript @types/node ts-node
-npx prisma init
-```
-
-### 3. Run Development Server
-```bash
-# From root directory
+npm run dev
+# or
+yarn dev
+# or
 pnpm dev
+# or
+bun dev
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 📚 Documentation
-- [Implementation Plan](docs/implementation_plan.md) - Detailed technical architecture and roadmap.
-- [Task List](docs/task.md) - Checklist of tasks.
-- [Product Description](Product%20descrition.md) - Original product requirements.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
