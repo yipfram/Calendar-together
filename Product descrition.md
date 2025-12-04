@@ -87,24 +87,26 @@ UI notes : très visuel, icônes grandes, interactions par gestes (mobile). Favo
 
 ---
 
-## 6. Architecture technique (Validée)
+## 6. Architecture technique (Validée — Mise à jour Décembre 2024)
 
 ### Structure & Infrastructure
-* **Monorepo** : Turborepo (gestion multi-packages optimisée).
-* **Local Dev** : PostgreSQL 16 (Windows) + Memurai (Redis compatible).
-* **Déploiement** : Portable (Railway/Render/VPS) via Docker si besoin plus tard.
+* **Framework** : Next.js 16 (App Router) — frontend + API unifiés.
+* **Package Manager** : pnpm.
+* **Local Dev** : PostgreSQL 16 (Windows).
+* **Déploiement** : Vercel (recommandé) ou Railway/Render.
 
-### Frontend (apps/web)
-* **Stack** : Vite 5 + React 18 + Tailwind CSS.
-* **State** : Zustand (global) + TanStack Query (server state).
-* **Realtime** : Socket.io-client.
-* **Routing** : React Router v6 (PWA ready).
+### Application (src/)
+* **Stack** : Next.js 16 + React 19 + TypeScript.
+* **Styling** : Tailwind CSS 4.
+* **State** : React Server Components + Client hooks.
+* **Auth** : Better Auth (OAuth Google + Email/Password).
+* **ORM** : Prisma 7 (type-safe, PostgreSQL).
 
-### Backend (apps/api)
-* **Server** : Node.js 20 + Fastify (haute perf).
-* **Database** : PostgreSQL + Prisma ORM (type-safe).
-* **Async Jobs** : BullMQ + Redis (sync calendriers, emails).
-* **Auth** : Passport.js (OAuth Google/Microsoft) + JWT.
+### Fichiers clés
+* `src/lib/auth.ts` — Configuration Better Auth serveur.
+* `src/lib/auth-client.ts` — Client React pour l'auth.
+* `src/app/api/auth/[...all]/route.ts` — API routes auth.
+* `prisma/schema.prisma` — Schéma base de données.
 
 ---
 
