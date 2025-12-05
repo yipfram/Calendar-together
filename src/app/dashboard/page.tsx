@@ -60,6 +60,29 @@ function DashboardContent() {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <a
+                        href="/rooms"
+                        className="p-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl rounded-2xl border border-purple-500/30 hover:border-purple-500/60 transition-all group"
+                    >
+                        <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-400">
+                            📅 My Rooms
+                        </h3>
+                        <p className="text-white/60">
+                            Create groups and find the perfect time to meet.
+                        </p>
+                    </a>
+                    <div className="p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+                        <h3 className="text-xl font-semibold text-white mb-2">
+                            🔗 Connect Calendar
+                        </h3>
+                        <p className="text-white/60">
+                            Share your availability with your groups.
+                        </p>
+                    </div>
+                </div>
+
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 mb-6">
                     <h2 className="text-2xl font-bold text-white mb-4">
                         Welcome, {session.user?.name || "User"}!
