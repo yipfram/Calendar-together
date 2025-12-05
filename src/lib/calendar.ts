@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { google, calendar_v3 } from "googleapis";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -16,8 +16,16 @@ const oauth2Client = new google.auth.OAuth2(
 
 // Scopes for Google Calendar free/busy access
 export const CALENDAR_SCOPES = [
-    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.freebusy",        // Own calendars
+    "https://www.googleapis.com/auth/calendar.events.freebusy", // Shared calendars
 ];
+
+export interface CalendarInfo {
+    id: string;
+    name: string;
+    primary: boolean;
+    backgroundColor?: string | null;
+}
 
 /**
  * Generate OAuth URL for calendar connection
@@ -26,7 +34,7 @@ export function getCalendarAuthUrl(userId: string): string {
     return oauth2Client.generateAuthUrl({
         access_type: "offline",
         scope: CALENDAR_SCOPES,
-        state: userId, // Pass userId to callback
+        state: userId,
         prompt: "consent",
     });
 }
@@ -95,28 +103,92 @@ async function getCalendarClient(userId: string) {
 }
 
 /**
- * Fetch free/busy information for a user
+ * Get list of all calendars for a user
+ */
+export async function getUserCalendars(userId: string): Promise<CalendarInfo[]> {
+    const calendar = await getCalendarClient(userId);
+
+    const response = await calendar.calendarList.list();
+    const items = response.data.items || [];
+
+    return items.map((cal: calendar_v3.Schema$CalendarListEntry) => ({
+        id: cal.id || "",
+        name: cal.summary || "Unnamed Calendar",
+        primary: cal.primary || false,
+        backgroundColor: cal.backgroundColor,
+    }));
+}
+
+/**
+ * Fetch free/busy information for a user from selected calendars
  */
 export async function getFreeBusy(
     userId: string,
     timeMin: Date,
-    timeMax: Date
+    timeMax: Date,
+    calendarIds?: string[] // Optional: specific calendars to check
 ): Promise<{ start: string; end: string }[]> {
     const calendar = await getCalendarClient(userId);
+
+    // If no specific calendars, get all user calendars
+    let calendarsToCheck = calendarIds;
+    if (!calendarsToCheck || calendarsToCheck.length === 0) {
+        const userCalendars = await getUserCalendars(userId);
+        calendarsToCheck = userCalendars.map(c => c.id);
+    }
 
     const response = await calendar.freebusy.query({
         requestBody: {
             timeMin: timeMin.toISOString(),
             timeMax: timeMax.toISOString(),
-            items: [{ id: "primary" }],
+            items: calendarsToCheck.map(id => ({ id })),
         },
     });
 
-    const busy = response.data.calendars?.primary?.busy || [];
-    return busy.map((slot) => ({
-        start: slot.start || "",
-        end: slot.end || "",
-    }));
+    // Combine busy slots from all calendars
+    const allBusy: { start: string; end: string }[] = [];
+    const calendars = response.data.calendars || {};
+
+    for (const calId of Object.keys(calendars)) {
+        const busySlots = calendars[calId]?.busy || [];
+        for (const slot of busySlots) {
+            allBusy.push({
+                start: slot.start || "",
+                end: slot.end || "",
+            });
+        }
+    }
+
+    // Sort and merge overlapping slots
+    return mergeOverlappingSlots(allBusy);
+}
+
+/**
+ * Merge overlapping busy slots
+ */
+function mergeOverlappingSlots(slots: { start: string; end: string }[]): { start: string; end: string }[] {
+    if (slots.length === 0) return [];
+
+    // Sort by start time
+    const sorted = [...slots].sort((a, b) =>
+        new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
+
+    const merged: { start: string; end: string }[] = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+        const current = sorted[i];
+        const last = merged[merged.length - 1];
+
+        if (new Date(current.start) <= new Date(last.end)) {
+            // Overlapping, extend the end time
+            last.end = new Date(current.end) > new Date(last.end) ? current.end : last.end;
+        } else {
+            merged.push(current);
+        }
+    }
+
+    return merged;
 }
 
 /**

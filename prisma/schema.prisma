@@ -64,17 +64,59 @@ model Verification {
 
 // Calendar Integration
 model CalendarAccount {
-  id           String   @id @default(cuid())
-  userId       String
-  provider     String   @default("google") // google, microsoft, apple
-  accessToken  String
-  refreshToken String?
-  expiresAt    DateTime?
-  calendarId   String?  // Primary calendar ID
-  lastSync     DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String   @default("google") // google, microsoft, apple
+  accessToken       String
+  refreshToken      String?
+  expiresAt         DateTime?
+  calendarId        String?  // Primary calendar ID
+  selectedCalendars String[] // Array of calendar IDs to include in free/busy
+  lastSync          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@unique([userId, provider])
 }
 
+// Rooms (Groups)
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String   @unique @default(cuid())
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members   RoomMember[]
+  proposals EventProposal[]
+}
+
+model RoomMember {
+  id            String   @id @default(cuid())
+  roomId        String
+  userId        String
+  role          String   @default("member") // owner, admin, member
+  shareFreeBusy Boolean  @default(true)
+  joinedAt      DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model EventProposal {
+  id          String   @id @default(cuid())
+  roomId      String
+  proposerId  String
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("pending") // pending, confirmed, cancelled
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
