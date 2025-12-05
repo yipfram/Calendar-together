@@ -61,3 +61,20 @@ model Verification {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+// Calendar Integration
+model CalendarAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String   @default("google") // google, microsoft, apple
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  calendarId   String?  // Primary calendar ID
+  lastSync     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, provider])
+}
+

@@ -5,16 +5,16 @@
 - [x] Setup Prisma 7 + Better Auth
 - [x] Create auth pages (sign-in, dashboard)
 
-## Phase 2: Database & Auth
-- [ ] Create PostgreSQL database `calendar_together`
-- [ ] Run migrations: `pnpm exec prisma migrate dev --name init`
-- [ ] Add Google OAuth credentials to `.env.local`
-- [ ] Test auth flow end-to-end
+## Phase 2: Database & Auth ✅
+- [x] Create PostgreSQL database `calendar_together`
+- [x] Run migrations: `pnpm exec prisma migrate dev --name init`
+- [x] Add Google OAuth credentials to `.env.local`
+- [x] Test auth flow end-to-end
 
-## Phase 3: Calendar Integration
-- [ ] Google Calendar OAuth setup
-- [ ] Free/busy API integration
-- [ ] Calendar sync background jobs
+## Phase 3: Calendar Integration ✅
+- [x] Google Calendar OAuth setup
+- [x] Free/busy API integration
+- [x] Dashboard with connect button
 
 ## Phase 4: Core Features
 - [ ] Group/Room creation
