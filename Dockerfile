@@ -33,8 +33,8 @@ COPY --from=deps /app/package.json ./package.json
 # Copy source code first
 COPY . .
 
-# Copy generated Prisma client from deps stage (after source to not be overwritten)
-COPY --from=deps /app/src/generated ./src/generated
+# Generate Prisma client
+RUN pnpm exec prisma generate
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
