@@ -16,8 +16,8 @@
 - [x] Free/busy API integration
 - [x] Dashboard with connect button
 
-## Phase 4: Core Features
-- [ ] Group/Room creation
-- [ ] Availability visualization (timeline)
+## Phase 4: Core Features (In Progress)
+- [x] Group/Room creation
+- [x] Availability visualization (mobile-first weekly view)
 - [ ] Event proposal & creation
 - [ ] Notifications
