@@ -23,6 +23,15 @@ interface Room {
     members: { id: string; userId: string; role: string }[];
 }
 
+const getMonday = (d: Date) => {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    date.setDate(diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+};
+
 export default function RoomPage() {
     const { data: session, isPending } = useSession();
     const router = useRouter();
@@ -34,9 +43,7 @@ export default function RoomPage() {
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
     const [startDate, setStartDate] = useState(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return today;
+        return getMonday(new Date());
     });
 
     useEffect(() => {
@@ -105,9 +112,7 @@ export default function RoomPage() {
     };
 
     const goToToday = () => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        setStartDate(today);
+        setStartDate(getMonday(new Date()));
     };
 
     if (isPending || loading) {
