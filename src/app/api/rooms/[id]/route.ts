@@ -36,7 +36,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const room = await prisma.room.findUnique({
         where: { id },
         include: {
-            members: true,
+            members: {
+                include: {
+                    user: {
+                        select: { id: true, name: true, email: true, image: true },
+                    },
+                },
+            },
             proposals: {
                 where: { status: "pending" },
                 orderBy: { startTime: "asc" },
