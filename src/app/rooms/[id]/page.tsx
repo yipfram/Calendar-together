@@ -2,16 +2,27 @@
 
 import { useSession } from "@/lib/auth-client";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 interface BusySlot {
     start: string;
     end: string;
+    userId: string;
+}
+
+interface RoomMember {
+    id: string;
+    userId: string;
+    role: string;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        image?: string;
+    };
 }
 
 interface Room {
@@ -20,7 +31,7 @@ interface Room {
     description?: string;
     inviteCode: string;
     ownerId: string;
-    members: { id: string; userId: string; role: string }[];
+    members: RoomMember[];
 }
 
 const getMonday = (d: Date) => {
@@ -39,12 +50,17 @@ export default function RoomPage() {
     const roomId = params.id as string;
 
     const [room, setRoom] = useState<Room | null>(null);
-    const [availability, setAvailability] = useState<Record<string, BusySlot[]>>({});
+    const [availability, setAvailability] = useState<Record<string, { start: string; end: string }[]>>({});
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
-    const [startDate, setStartDate] = useState(() => {
-        return getMonday(new Date());
-    });
+    const [startDate, setStartDate] = useState(() => getMonday(new Date()));
+
+    // Add Member Modal State
+    const [showAddMember, setShowAddMember] = useState(false);
+    const [memberEmail, setMemberEmail] = useState("");
+    const [addingMember, setAddingMember] = useState(false);
+    const [addMemberError, setAddMemberError] = useState("");
+    const [addMemberSuccess, setAddMemberSuccess] = useState("");
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -99,6 +115,43 @@ export default function RoomPage() {
         }
     };
 
+    const addMember = async () => {
+        if (!memberEmail.trim()) return;
+
+        setAddingMember(true);
+        setAddMemberError("");
+        setAddMemberSuccess("");
+
+        try {
+            const res = await fetch(`/api/rooms/${roomId}/members`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: memberEmail.trim() }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setAddMemberError(data.error || "Failed to add member");
+                return;
+            }
+
+            if (data.added) {
+                setAddMemberSuccess(`${memberEmail} has been added to the room!`);
+                fetchRoom(); // Refresh member list
+            } else if (data.invited) {
+                setAddMemberSuccess(`Invitation sent to ${memberEmail}!`);
+            }
+
+            setMemberEmail("");
+        } catch (error) {
+            console.error("Failed to add member:", error);
+            setAddMemberError("An unexpected error occurred");
+        } finally {
+            setAddingMember(false);
+        }
+    };
+
     const nextWeek = () => {
         const newDate = new Date(startDate);
         newDate.setDate(newDate.getDate() + 7);
@@ -113,6 +166,22 @@ export default function RoomPage() {
 
     const goToToday = () => {
         setStartDate(getMonday(new Date()));
+    };
+
+    // Get member by userId for displaying profile info
+    const getMemberByUserId = (userId: string): RoomMember | undefined => {
+        return room?.members.find((m) => m.userId === userId);
+    };
+
+    // Get busy slots with userId preserved
+    const getAllBusySlotsWithUser = (): BusySlot[] => {
+        const allSlots: BusySlot[] = [];
+        Object.entries(availability).forEach(([userId, slots]) => {
+            slots.forEach((slot) => {
+                allSlots.push({ ...slot, userId });
+            });
+        });
+        return allSlots;
     };
 
     if (isPending || loading) {
@@ -143,17 +212,7 @@ export default function RoomPage() {
         return date.toDateString() === today.toDateString();
     };
 
-    // Combine all member busy slots for display
-    const getAllBusySlots = () => {
-        const allSlots: BusySlot[] = [];
-        Object.values(availability).forEach(slots => {
-            allSlots.push(...slots);
-        });
-        console.log(allSlots)
-        return allSlots;
-    };
-
-    const allBusy = getAllBusySlots();
+    const allBusy = getAllBusySlotsWithUser();
 
     return (
         <div className="h-screen flex flex-col bg-background">
@@ -169,15 +228,73 @@ export default function RoomPage() {
                             {room.members.length} members
                         </span>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyInviteLink}
-                    >
-                        {copied ? "Copied!" : "Invite"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowAddMember(true)}
+                        >
+                            + Add Member
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={copyInviteLink}
+                        >
+                            {copied ? "Copied!" : "Invite"}
+                        </Button>
+                    </div>
                 </div>
             </header>
+
+            {/* Add Member Modal */}
+            {showAddMember && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-card border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+                        <h2 className="text-xl font-semibold mb-4">Add Member</h2>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Enter the email address of the person you want to add.
+                            If they don't have an account, they'll receive an invitation.
+                        </p>
+                        <input
+                            type="email"
+                            value={memberEmail}
+                            onChange={(e) => setMemberEmail(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && addMember()}
+                            placeholder="email@example.com"
+                            className="w-full px-4 py-3 bg-muted border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+                            disabled={addingMember}
+                            autoFocus
+                        />
+                        {addMemberError && (
+                            <p className="text-sm text-destructive mb-4">{addMemberError}</p>
+                        )}
+                        {addMemberSuccess && (
+                            <p className="text-sm text-green-500 mb-4">{addMemberSuccess}</p>
+                        )}
+                        <div className="flex gap-3 justify-end">
+                            <Button
+                                variant="ghost"
+                                onClick={() => {
+                                    setShowAddMember(false);
+                                    setMemberEmail("");
+                                    setAddMemberError("");
+                                    setAddMemberSuccess("");
+                                }}
+                                disabled={addingMember}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={addMember}
+                                disabled={addingMember || !memberEmail.trim()}
+                            >
+                                {addingMember ? "Adding..." : "Add Member"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Week Navigation */}
             <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
@@ -246,7 +363,7 @@ export default function RoomPage() {
                                 <div key={hour} className="h-12 border-b border-border/30"></div>
                             ))}
 
-                            {/* Busy Blocks */}
+                            {/* Busy Blocks with Profile Pictures */}
                             {allBusy.map((slot, i) => {
                                 const start = new Date(slot.start);
                                 const end = new Date(slot.end);
@@ -268,15 +385,39 @@ export default function RoomPage() {
                                 const top = 48 + (startMinutes / 60) * 48; // + header height
                                 const height = (durationMinutes / 60) * 48;
 
+                                const member = getMemberByUserId(slot.userId);
+                                const userName = member?.user?.name || "Unknown";
+                                const userImage = member?.user?.image;
+
                                 return (
                                     <div
                                         key={`busy-${i}`}
-                                        className="absolute left-1 right-1 bg-muted-foreground/20 border-l-2 border-muted-foreground/50 rounded-sm pointer-events-none"
+                                        className="absolute left-1 right-1 bg-muted-foreground/20 border-l-2 border-muted-foreground/50 rounded-sm flex items-start gap-1 p-1 overflow-hidden group cursor-default"
                                         style={{
                                             top: `${top}px`,
-                                            height: `${Math.max(height, 4)}px`,
+                                            height: `${Math.max(height, 24)}px`,
                                         }}
-                                    />
+                                        title={`${userName} is busy`}
+                                    >
+                                        {/* Profile Picture */}
+                                        {userImage ? (
+                                            <img
+                                                src={userImage}
+                                                alt={userName}
+                                                className="w-5 h-5 rounded-full flex-shrink-0 ring-1 ring-background"
+                                            />
+                                        ) : (
+                                            <div className="w-5 h-5 rounded-full bg-primary/30 flex items-center justify-center text-[10px] font-medium flex-shrink-0 ring-1 ring-background">
+                                                {userName.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                        {/* Name (show on wider blocks) */}
+                                        {height >= 30 && (
+                                            <span className="text-[10px] text-muted-foreground truncate">
+                                                {userName}
+                                            </span>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
