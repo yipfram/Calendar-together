@@ -18,6 +18,7 @@ const oauth2Client = new google.auth.OAuth2(
 export const CALENDAR_SCOPES = [
     "https://www.googleapis.com/auth/calendar.freebusy",        // Own calendars
     "https://www.googleapis.com/auth/calendar.events.freebusy", // Shared calendars
+    "https://www.googleapis.com/auth/calendar.readonly",        // List calendars
 ];
 
 export interface CalendarInfo {
