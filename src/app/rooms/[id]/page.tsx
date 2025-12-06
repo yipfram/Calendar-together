@@ -144,6 +144,7 @@ export default function RoomPage() {
         Object.values(availability).forEach(slots => {
             allSlots.push(...slots);
         });
+        console.log(allSlots)
         return allSlots;
     };
 
