@@ -135,25 +135,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 });
             }
 
-            // Create new invitation
-            const invitation = await prisma.roomInvitation.create({
-                data: {
-                    roomId: id,
-                    email: email.toLowerCase().trim(),
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-                },
-            });
-
-            // Send email
+            // Generate token first (before DB creation)
+            const crypto = await import("crypto");
+            const token = crypto.randomBytes(32).toString("hex");
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-            const inviteLink = `${appUrl}/invite/${invitation.token}`;
+            const inviteLink = `${appUrl}/invite/${token}`;
 
+            // Send email FIRST - if this fails, we don't create the DB record
             await sendInviteEmail(
                 email,
                 inviteLink,
                 room.name,
                 session.user.name || "A team member"
             );
+
+            // Only create invitation in DB after email succeeds
+            await prisma.roomInvitation.create({
+                data: {
+                    roomId: id,
+                    email: email.toLowerCase().trim(),
+                    token,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+                },
+            });
 
             return NextResponse.json({ invited: true, email }, { status: 201 });
         } catch (error) {
