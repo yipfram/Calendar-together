@@ -220,7 +220,7 @@ export default function RoomPage() {
             <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
                 <div className="flex items-center justify-between h-14 px-4">
                     <div className="flex items-center gap-3">
-                        <Link href="/rooms">
+                        <Link href="/dashboard">
                             <Button variant="ghost" size="sm">← Back</Button>
                         </Link>
                         <h1 className="text-lg font-semibold truncate max-w-[200px] sm:max-w-none">{room.name}</h1>
