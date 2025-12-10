@@ -43,8 +43,20 @@ function DashboardContent() {
     useEffect(() => {
         if (session) {
             fetchRooms();
+            checkCalendarConnection();
         }
     }, [session]);
+
+    const checkCalendarConnection = async () => {
+        try {
+            const res = await fetch("/api/calendar/settings");
+            if (res.ok) {
+                setCalendarStatus("connected");
+            }
+        } catch (error) {
+            console.error("Failed to check calendar connection:", error);
+        }
+    };
 
     const fetchRooms = async () => {
         try {

@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { CALENDAR_SCOPES } from "@/lib/calendar";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -33,6 +34,9 @@ export const auth = betterAuth({
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            scope: CALENDAR_SCOPES,
+            accessType: "offline",
+            prompt: "consent",
         },
     },
     databaseHooks: {
@@ -51,6 +55,64 @@ export const auth = betterAuth({
             create: {
                 after: async (session) => {
                     logAuthEvent("SUCCESS", "User signed in - session created", { userId: session.userId, sessionId: session.id });
+                },
+            },
+        },
+        account: {
+            create: {
+                after: async (account) => {
+                    if (account.providerId === "google") {
+                        logAuthEvent("INFO", "Syncing Google Calendar tokens", { userId: account.userId });
+                        try {
+                            await prisma.calendarAccount.upsert({
+                                where: { userId_provider: { userId: account.userId, provider: "google" } },
+                                create: {
+                                    userId: account.userId,
+                                    provider: "google",
+                                    accessToken: account.accessToken!,
+                                    refreshToken: account.refreshToken,
+                                    expiresAt: account.accessTokenExpiresAt,
+                                },
+                                update: {
+                                    accessToken: account.accessToken!,
+                                    refreshToken: account.refreshToken,
+                                    expiresAt: account.accessTokenExpiresAt,
+                                },
+                            });
+                            logAuthEvent("SUCCESS", "Synced Google Calendar tokens");
+                        } catch (error) {
+                            const message = error instanceof Error ? error.message : String(error);
+                            logAuthEvent("ERROR", "Failed to sync Google Calendar tokens", { message });
+                        }
+                    }
+                },
+            },
+            update: {
+                after: async (account) => {
+                    if (account.providerId === "google") {
+                        logAuthEvent("INFO", "Updating Google Calendar tokens", { userId: account.userId });
+                        try {
+                            await prisma.calendarAccount.upsert({
+                                where: { userId_provider: { userId: account.userId, provider: "google" } },
+                                create: {
+                                    userId: account.userId,
+                                    provider: "google",
+                                    accessToken: account.accessToken!,
+                                    refreshToken: account.refreshToken,
+                                    expiresAt: account.accessTokenExpiresAt,
+                                },
+                                update: {
+                                    accessToken: account.accessToken!,
+                                    refreshToken: account.refreshToken,
+                                    expiresAt: account.accessTokenExpiresAt,
+                                },
+                            });
+                            logAuthEvent("SUCCESS", "Updated Google Calendar tokens");
+                        } catch (error) {
+                            const message = error instanceof Error ? error.message : String(error);
+                            logAuthEvent("ERROR", "Failed to update Google Calendar tokens", { message });
+                        }
+                    }
                 },
             },
         },
