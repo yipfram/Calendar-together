@@ -24,13 +24,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!invitation) {
-        return NextResponse.redirect(`${appUrl}/rooms?error=invalid_invite`);
+        return NextResponse.redirect(`${appUrl}/dashboard?error=invalid_invite`);
     }
 
     if (invitation.expiresAt < new Date()) {
         // Clean up expired invitation
         await prisma.roomInvitation.delete({ where: { id: invitation.id } });
-        return NextResponse.redirect(`${appUrl}/rooms?error=expired_invite`);
+        return NextResponse.redirect(`${appUrl}/dashboard?error=expired_invite`);
     }
 
     // Check if user is logged in
