@@ -88,7 +88,7 @@ function DashboardContent() {
                 if (data?.room?.id) {
                     router.push(`/rooms/${data.room.id}`);
                 } else {
-                    // Fallback: refresh room list if redirect fails
+                    // Fallback: refresh room list if response structure is invalid
                     fetchRooms();
                 }
             }
