@@ -85,7 +85,9 @@ function DashboardContent() {
                 setNewRoomName("");
                 setShowCreate(false);
                 // Redirect to the newly created room
-                router.push(`/rooms/${data.room.id}`);
+                if (data?.room?.id) {
+                    router.push(`/rooms/${data.room.id}`);
+                }
             }
         } catch (error) {
             console.error("Failed to create room:", error);
@@ -169,7 +171,7 @@ function DashboardContent() {
                                         type="text"
                                         value={newRoomName}
                                         onChange={(e) => setNewRoomName(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && createRoom()}
+                                        onKeyDown={(e) => { if (e.key === "Enter") createRoom(); }}
                                         placeholder="Room name"
                                         className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                     />
@@ -189,7 +191,7 @@ function DashboardContent() {
                                 type="text"
                                 value={inviteCode}
                                 onChange={(e) => setInviteCode(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && joinRoom()}
+                                onKeyDown={(e) => { if (e.key === "Enter") joinRoom(); }}
                                 placeholder="Enter invite code to join"
                                 className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
