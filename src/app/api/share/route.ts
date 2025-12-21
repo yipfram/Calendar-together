@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient, Visibility } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { randomBytes } from "crypto";
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 expiresAt: expiresAt ? new Date(expiresAt) : null,
-                visibility: visibility || "public",
+                visibility: (visibility as Visibility) || Visibility.public,
                 allowedEmails: allowedEmails || [],
             },
         });

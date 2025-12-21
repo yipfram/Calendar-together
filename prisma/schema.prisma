@@ -138,6 +138,12 @@ model EventProposal {
   room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
+enum Visibility {
+  public
+  authenticated
+  restricted
+}
+
 model AvailabilityShareLink {
   id            String    @id @default(cuid())
   userId        String
@@ -146,8 +152,8 @@ model AvailabilityShareLink {
   startDate     DateTime
   endDate       DateTime
   expiresAt     DateTime?
-  active        Boolean   @default(true)
-  visibility    String    @default("public") // public, authenticated, restricted
+  active        Boolean    @default(true)
+  visibility    Visibility @default(public)
   allowedEmails String[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
