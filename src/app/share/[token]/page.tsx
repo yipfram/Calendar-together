@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -44,13 +44,7 @@ export default function SharedAvailabilityPage() {
     const [error, setError] = useState("");
     const [startDate, setStartDate] = useState(() => getMonday(new Date()));
 
-    useEffect(() => {
-        if (token) {
-            fetchAvailability();
-        }
-    }, [token, startDate]);
-
-    const fetchAvailability = async () => {
+    const fetchAvailability = useCallback(async () => {
         try {
             // Fetch availability for the current view week
             const timeMin = new Date(startDate);
@@ -90,7 +84,13 @@ export default function SharedAvailabilityPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, startDate, data]);
+
+    useEffect(() => {
+        if (token) {
+            fetchAvailability();
+        }
+    }, [token, fetchAvailability]);
 
     const nextWeek = () => {
         if (!data) return;
