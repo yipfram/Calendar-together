@@ -45,52 +45,47 @@ export default function SharedAvailabilityPage() {
     const [startDate, setStartDate] = useState(() => getMonday(new Date()));
 
     useEffect(() => {
+        const fetchAvailability = async () => {
+            try {
+                // Fetch availability for the current view week
+                const timeMin = new Date(startDate);
+                const timeMax = new Date(timeMin);
+                timeMax.setDate(timeMax.getDate() + 7);
+
+                const res = await fetch(
+                    `/api/share/${token}?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}`
+                );
+                const jsonData = await res.json();
+
+                if (res.ok) {
+                    setData(jsonData);
+                    // Initialize start date to the link's start date (aligned to Monday) if accessing for first time
+                    if (!data) {
+                        const linkStart = new Date(jsonData.link.startDate);
+                        setStartDate(getMonday(linkStart));
+                    }
+                } else {
+                    if (res.status === 401) {
+                        // Redirect to login
+                        const currentUrl = window.location.href;
+                        window.location.href = `/sign-in?callbackUrl=${encodeURIComponent(currentUrl)}`;
+                        return;
+                    }
+                    setError(jsonData.error || "Failed to load availability");
+                }
+            } catch (err) {
+                console.error("Failed to fetch availability:", err);
+                setError("Something went wrong");
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (token) {
             fetchAvailability();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token, startDate]);
-
-    const fetchAvailability = async () => {
-        try {
-            // Fetch availability for the current view week
-            const timeMin = new Date(startDate);
-            const timeMax = new Date(timeMin);
-            timeMax.setDate(timeMax.getDate() + 7);
-
-            const res = await fetch(
-                `/api/share/${token}?timeMin=${timeMin.toISOString()}&timeMax=${timeMax.toISOString()}`
-            );
-            const jsonData = await res.json();
-
-            if (res.ok) {
-                setData(jsonData);
-                // Initialize start date to the link's start date (aligned to Monday) if accessing for first time
-                // But we need to handle this carefully to not reset on every fetch if we want state persistence?
-                // Actually, if we fetch based on `startDate`, we need to set `startDate` once we know the link bounds.
-                // However, we fetch *based* on start date. Chicken and egg if we don't know bounds.
-                // Correct approach: First fetch gets the bounds. Then we align.
-
-                // If it's the first load (data was null), align view to the link start
-                if (!data) {
-                    const linkStart = new Date(jsonData.link.startDate);
-                    setStartDate(getMonday(linkStart));
-                }
-            } else {
-                if (res.status === 401) {
-                    // Redirect to login
-                    const currentUrl = window.location.href;
-                    window.location.href = `/sign-in?callbackUrl=${encodeURIComponent(currentUrl)}`;
-                    return;
-                }
-                setError(jsonData.error || "Failed to load availability");
-            }
-        } catch (err) {
-            console.error("Failed to fetch availability:", err);
-            setError("Something went wrong");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const nextWeek = () => {
         if (!data) return;

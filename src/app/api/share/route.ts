@@ -53,13 +53,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Start and End dates are required" }, { status: 400 });
         }
 
-        // Generate secure token
+        const validVisibilities = ["public", "authenticated", "restricted"];
+        if (visibility && !validVisibilities.includes(visibility)) {
+            return NextResponse.json({ error: "Invalid visibility option" }, { status: 400 });
+        }
+
         const token = randomBytes(32).toString("hex");
 
         const link = await prisma.availabilityShareLink.create({
             data: {
                 userId: session.user.id,
-                token, // Explicitly set token
+                token,
                 name: name || "My Availability",
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),

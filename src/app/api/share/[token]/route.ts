@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             });
 
             if (!session?.user) {
-                // If specific redirect needed for UI, frontend handles/catches 401
+                // Deliberately return 401 from this API; the frontend interprets this and performs any necessary redirects (e.g., to a login page).
                 return NextResponse.json({ error: "Authentication required" }, { status: 401 });
             }
 
