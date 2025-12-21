@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +43,7 @@ export default function SharedAvailabilityPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [startDate, setStartDate] = useState(() => getMonday(new Date()));
+    const isFirstLoadRef = useRef(true);
 
     const fetchAvailability = useCallback(async () => {
         try {
@@ -64,10 +65,11 @@ export default function SharedAvailabilityPage() {
                 // However, we fetch *based* on start date. Chicken and egg if we don't know bounds.
                 // Correct approach: First fetch gets the bounds. Then we align.
 
-                // If it's the first load (data was null), align view to the link start
-                if (!data) {
+                // If it's the first load, align view to the link start
+                if (isFirstLoadRef.current) {
                     const linkStart = new Date(jsonData.link.startDate);
                     setStartDate(getMonday(linkStart));
+                    isFirstLoadRef.current = false;
                 }
             } else {
                 if (res.status === 401) {
@@ -84,13 +86,13 @@ export default function SharedAvailabilityPage() {
         } finally {
             setLoading(false);
         }
-    }, [token, startDate, data]);
+    }, [token, startDate]);
 
     useEffect(() => {
         if (token) {
             fetchAvailability();
         }
-    }, [token, fetchAvailability]);
+    }, [token, startDate, fetchAvailability]);
 
     const nextWeek = () => {
         if (!data) return;
