@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 // import { RoomsSkeleton } from "@/components/RoomsSkeleton"; // Deleting rooms usage
 import { ShareAvailabilityModal } from "@/components/ShareAvailabilityModal";
+import { CalendarSelector } from "@/components/CalendarSelector";
 import { Copy, Check } from "lucide-react";
 
 interface Room {
@@ -272,6 +273,11 @@ function DashboardContent() {
                                 </svg>
                                 {calendarStatus === "connected" ? "Reconnect" : "Connect Google Calendar"}
                             </button>
+
+                            {/* Calendar Selection for Unavailability */}
+                            {calendarStatus === "connected" && (
+                                <CalendarSelector className="mt-6 pt-6 border-t border-white/10" />
+                            )}
                         </div>
                     </div>
                 </div>
