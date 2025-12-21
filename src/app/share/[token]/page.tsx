@@ -76,6 +76,12 @@ export default function SharedAvailabilityPage() {
                     setStartDate(getMonday(linkStart));
                 }
             } else {
+                if (res.status === 401) {
+                    // Redirect to login
+                    const currentUrl = window.location.href;
+                    window.location.href = `/sign-in?callbackUrl=${encodeURIComponent(currentUrl)}`;
+                    return;
+                }
                 setError(jsonData.error || "Failed to load availability");
             }
         } catch (err) {

@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, Copy, Loader2, Check } from "lucide-react";
 
 export function ShareAvailabilityModal() {
@@ -21,8 +21,35 @@ export function ShareAvailabilityModal() {
     const [isCustom, setIsCustom] = useState(false);
     const [customStartDate, setCustomStartDate] = useState("");
     const [customEndDate, setCustomEndDate] = useState("");
+    const [restrictedEmails, setRestrictedEmails] = useState("");
+    const [emailError, setEmailError] = useState("");
+
+    const validateEmails = (input: string): boolean => {
+        if (!input.trim()) return true; // Empty is fine (handled by logic below if required, but here we assume if empty -> no restricted emails? or error?) 
+        // Actually if restricted is selected, we probably want at least one email.
+        const emails = input.split(",").map(e => e.trim()).filter(e => e);
+        if (emails.length === 0) return false;
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emails.every(email => emailRegex.test(email));
+    };
 
     const generateLink = async () => {
+        setEmailError("");
+        let allowedEmails: string[] = [];
+
+        if (visibility === "restricted") {
+            if (!restrictedEmails.trim()) {
+                setEmailError("Please enter at least one email address");
+                return;
+            }
+            if (!validateEmails(restrictedEmails)) {
+                setEmailError("Please ensure all email addresses are valid");
+                return;
+            }
+            allowedEmails = restrictedEmails.split(",").map(e => e.trim()).filter(e => e);
+        }
+
         setLoading(true);
         try {
             let start = new Date();
@@ -43,6 +70,7 @@ export function ShareAvailabilityModal() {
                     startDate: start.toISOString(),
                     endDate: end.toISOString(),
                     visibility,
+                    allowedEmails
                 }),
             });
 
@@ -117,8 +145,85 @@ export function ShareAvailabilityModal() {
                             </Select>
                         </div>
 
+                        {/* Visibility Selector */}
+                        <div className="space-y-3">
+                            <Label className="text-sm font-medium text-slate-200">Who can view this?</Label>
+                            <div className="flex flex-col gap-3">
+                                <label className="flex items-start gap-3 p-3 rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input
+                                        type="radio"
+                                        name="visibility"
+                                        value="public"
+                                        checked={visibility === "public"}
+                                        onChange={(e) => setVisibility(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <div>
+                                        <div className="text-sm font-medium text-white">Public</div>
+                                        <div className="text-xs text-slate-400">Anyone with the link can view</div>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-3 p-3 rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input
+                                        type="radio"
+                                        name="visibility"
+                                        value="authenticated"
+                                        checked={visibility === "authenticated"}
+                                        onChange={(e) => setVisibility(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <div>
+                                        <div className="text-sm font-medium text-white">Authenticated Users</div>
+                                        <div className="text-xs text-slate-400">Any logged-in user</div>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-3 p-3 rounded-lg border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input
+                                        type="radio"
+                                        name="visibility"
+                                        value="restricted"
+                                        checked={visibility === "restricted"}
+                                        onChange={(e) => setVisibility(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <div>
+                                        <div className="text-sm font-medium text-white">Restricted</div>
+                                        <div className="text-xs text-slate-400">Specific people only (by email)</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Restricted Emails Input */}
+                        {visibility === "restricted" && (
+                            <div className="space-y-2">
+                                <Label className="text-xs">Allowed Emails (comma separated)</Label>
+                                <Input
+                                    placeholder="friend@example.com, colleague@work.com"
+                                    className={`bg-white/5 border-white/10 ${emailError ? "border-red-500/50 focus:ring-red-500" : ""}`}
+                                    value={restrictedEmails}
+                                    onChange={(e) => {
+                                        setRestrictedEmails(e.target.value);
+                                        if (emailError) setEmailError("");
+                                    }}
+                                    id="allowed-emails"
+                                />
+                                {emailError ? (
+                                    <p className="text-[10px] text-red-400 font-medium">
+                                        {emailError}
+                                    </p>
+                                ) : (
+                                    <p className="text-[10px] text-slate-400">
+                                        Only users with these emails can access the link.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Custom Dates */}
-                        {isCustom && (
+                        {(isCustom || duration === "custom") && (
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-xs">Start Date</Label>
@@ -127,6 +232,7 @@ export function ShareAvailabilityModal() {
                                         value={customStartDate}
                                         onChange={(e) => setCustomStartDate(e.target.value)}
                                         className="bg-white/5 border-white/10"
+                                        min={new Date().toISOString().split("T")[0]}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -136,13 +242,11 @@ export function ShareAvailabilityModal() {
                                         value={customEndDate}
                                         onChange={(e) => setCustomEndDate(e.target.value)}
                                         className="bg-white/5 border-white/10"
+                                        min={customStartDate || new Date().toISOString().split("T")[0]}
                                     />
                                 </div>
                             </div>
                         )}
-
-                        {/* Visibility (Hidden by default for simple flow, can enable if needed) */}
-                        {/* For MVP let's keep it simple: defaulting to 'public' as per plan, maybe an advanced toggle later */}
 
                         <Button
                             onClick={generateLink}
