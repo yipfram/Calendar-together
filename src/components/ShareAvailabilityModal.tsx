@@ -101,7 +101,7 @@ export function ShareAvailabilityModal({ onLinkCreated }: { onLinkCreated?: () =
                 setCopied(false);
             }, 300);
         }
-    }
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={reset}>
