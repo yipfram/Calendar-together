@@ -23,6 +23,7 @@ model User {
   sessions    Session[]
   accounts    Account[]
   roomMembers RoomMember[]
+  shareLinks  AvailabilityShareLink[]
 }
 
 model Session {
@@ -135,4 +136,27 @@ model EventProposal {
   updatedAt   DateTime @updatedAt
 
   room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+enum Visibility {
+  public
+  authenticated
+  restricted
+}
+
+model AvailabilityShareLink {
+  id            String    @id @default(cuid())
+  userId        String
+  token         String    @unique
+  name          String?
+  startDate     DateTime
+  endDate       DateTime
+  expiresAt     DateTime?
+  active        Boolean    @default(true)
+  visibility    Visibility @default(public)
+  allowedEmails String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
