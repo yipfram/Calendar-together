@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { RoomsSkeleton } from "@/components/RoomsSkeleton";
+import { ShareAvailabilityModal } from "@/components/ShareAvailabilityModal";
+import { Copy, Check, Users } from "lucide-react";
 
 interface Room {
     id: string;
@@ -25,6 +27,14 @@ function DashboardContent() {
     const [showCreate, setShowCreate] = useState(false);
     const [newRoomName, setNewRoomName] = useState("");
     const [inviteCode, setInviteCode] = useState("");
+    const [copiedRoomId, setCopiedRoomId] = useState<string | null>(null);
+
+    const copyRoomLink = (code: string, roomId: string) => {
+        const link = `${window.location.origin}/invite/${code}`;
+        navigator.clipboard.writeText(link);
+        setCopiedRoomId(roomId);
+        setTimeout(() => setCopiedRoomId(null), 2000);
+    };
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -148,6 +158,21 @@ function DashboardContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column: My Rooms */}
                     <div className="lg:col-span-2">
+                        {/* Personal Availability Section */}
+                        <section className="mb-8">
+                            <h2 className="text-2xl font-bold text-white mb-6">My Availability</h2>
+                            <div className="p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 backdrop-blur-xl rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white mb-1">Quick Share</h3>
+                                    <p className="text-white/60 text-sm max-w-md">
+                                        Create a link to share your free/busy status with friends for the next 2 weeks.
+                                        They won't see your event details.
+                                    </p>
+                                </div>
+                                <ShareAvailabilityModal />
+                            </div>
+                        </section>
+
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-white">My Rooms</h2>
                             <button
@@ -182,7 +207,7 @@ function DashboardContent() {
 
                         {/* Join Room Input */}
                         <div className="mb-6 flex gap-2">
-                             <input
+                            <input
                                 type="text"
                                 value={inviteCode}
                                 onChange={(e) => setInviteCode(e.target.value)}
@@ -214,11 +239,28 @@ function DashboardContent() {
                                         {room.description && (
                                             <p className="text-white/60 mb-4 line-clamp-2">{room.description}</p>
                                         )}
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full flex items-center gap-1">
+                                                <Users className="w-3 h-3" />
                                                 {room.role}
                                             </span>
-                                            <span className="text-white/40 text-sm">View →</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    copyRoomLink(room.inviteCode, room.id);
+                                                }}
+                                                className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                                title="Copy invite link"
+                                            >
+                                                {copiedRoomId === room.id ? (
+                                                    <Check className="w-4 h-4 text-green-400" />
+                                                ) : (
+                                                    <Copy className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                            <span className="text-white/40 text-sm group-hover:text-white transition-colors">View →</span>
                                         </div>
                                     </Link>
                                 ))}
