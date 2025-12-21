@@ -260,19 +260,27 @@ export function ShareAvailabilityModal({ onLinkCreated }: { onLinkCreated?: () =
                 ) : (
                     <div className="space-y-6 py-4">
                         <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-                            <h3 className="text-green-400 font-semibold mb-1">Link Ready!</h3>
-                            <p className="text-xs text-slate-400">Anyone with this link can view your availability.</p>
+                            <h3 className="text-green-400 font-semibold mb-1">
+                                {visibility === "public" ? "Public Link Ready!" : "Secure Link Created!"}
+                            </h3>
+                            <p className="text-xs text-slate-400">
+                                {visibility === "public"
+                                    ? "Anyone with this link can view your availability."
+                                    : "Only authorized users can access this link."}
+                            </p>
                         </div>
 
-                        <div className="flex items-center gap-2 p-2 bg-black/30 rounded-lg border border-white/10">
-                            <code className="flex-1 text-xs truncate text-slate-300 font-mono pl-2">
-                                {generatedLink}
-                            </code>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                readOnly
+                                value={generatedLink}
+                                className="flex-1 bg-black/30 border-white/10 text-slate-300 font-mono text-xs h-10 select-all"
+                            />
                             <Button
-                                size="sm"
-                                variant="ghost"
+                                size="icon"
+                                variant="outline"
                                 onClick={copyToClipboard}
-                                className={copied ? "text-green-400" : "text-white"}
+                                className={`h-10 w-10 border-white/10 bg-white/5 hover:bg-white/10 ${copied ? "text-green-400 border-green-500/50" : "text-white"}`}
                             >
                                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                             </Button>
