@@ -4,7 +4,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { RoomsSkeleton } from "@/components/RoomsSkeleton";
+// import { RoomsSkeleton } from "@/components/RoomsSkeleton"; // Deleting rooms usage
 import { ShareAvailabilityModal } from "@/components/ShareAvailabilityModal";
 import { Copy, Check, Users } from "lucide-react";
 
@@ -22,18 +22,36 @@ function DashboardContent() {
     const searchParams = useSearchParams();
     const [calendarStatus, setCalendarStatus] = useState<"idle" | "connected" | "error">("idle");
 
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [loadingRooms, setLoadingRooms] = useState(true);
-    const [showCreate, setShowCreate] = useState(false);
-    const [newRoomName, setNewRoomName] = useState("");
-    const [inviteCode, setInviteCode] = useState("");
-    const [copiedRoomId, setCopiedRoomId] = useState<string | null>(null);
+    const [shareLinks, setShareLinks] = useState<any[]>([]);
+    const [loadingLinks, setLoadingLinks] = useState(true);
+    const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
 
-    const copyRoomLink = (code: string, roomId: string) => {
-        const link = `${window.location.origin}/invite/${code}`;
+    const copyShareLink = (token: string, id: string) => {
+        const link = `${window.location.origin}/share/${token}`;
         navigator.clipboard.writeText(link);
-        setCopiedRoomId(roomId);
-        setTimeout(() => setCopiedRoomId(null), 2000);
+        setCopiedLinkId(id);
+        setTimeout(() => setCopiedLinkId(null), 2000);
+    };
+
+    const deleteLink = async (id: string, e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent bubbling if needed
+        if (!confirm("Are you sure you want to delete this shared link? This action cannot be undone.")) return;
+
+        try {
+            const res = await fetch("/api/share", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }),
+            });
+
+            if (res.ok) {
+                fetchLinks();
+            } else {
+                alert("Failed to delete link.");
+            }
+        } catch (error) {
+            console.error("Failed to delete link:", error);
+        }
     };
 
     useEffect(() => {
@@ -52,7 +70,7 @@ function DashboardContent() {
 
     useEffect(() => {
         if (session) {
-            fetchRooms();
+            fetchLinks();
             checkCalendarConnection();
         }
     }, [session]);
@@ -68,54 +86,15 @@ function DashboardContent() {
         }
     };
 
-    const fetchRooms = async () => {
+    const fetchLinks = async () => {
         try {
-            const res = await fetch("/api/rooms");
+            const res = await fetch("/api/share");
             const data = await res.json();
-            setRooms(data.rooms || []);
+            setShareLinks(data.links || []);
         } catch (error) {
-            console.error("Failed to fetch rooms:", error);
+            console.error("Failed to fetch share links:", error);
         } finally {
-            setLoadingRooms(false);
-        }
-    };
-
-    const createRoom = async () => {
-        if (!newRoomName.trim()) return;
-
-        try {
-            const res = await fetch("/api/rooms", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newRoomName }),
-            });
-
-            if (res.ok) {
-                setNewRoomName("");
-                setShowCreate(false);
-                fetchRooms();
-            }
-        } catch (error) {
-            console.error("Failed to create room:", error);
-        }
-    };
-
-    const joinRoom = async () => {
-        if (!inviteCode.trim()) return;
-
-        try {
-            const res = await fetch("/api/rooms/join/members", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ inviteCode }),
-            });
-
-            if (res.ok) {
-                setInviteCode("");
-                fetchRooms();
-            }
-        } catch (error) {
-            console.error("Failed to join room:", error);
+            setLoadingLinks(false);
         }
     };
 
@@ -156,121 +135,107 @@ function DashboardContent() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: My Rooms */}
-                    <div className="lg:col-span-2">
-                        {/* Personal Availability Section */}
-                        <section className="mb-8">
-                            <h2 className="text-2xl font-bold text-white mb-6">My Availability</h2>
+                    {/* Left Column: Availability Management */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Create New Link Section */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-white mb-6">Manager</h2>
                             <div className="p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 backdrop-blur-xl rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white mb-1">Quick Share</h3>
+                                    <h3 className="text-lg font-semibold text-white mb-1">Share Availability</h3>
                                     <p className="text-white/60 text-sm max-w-md">
-                                        Create a link to share your free/busy status with friends for the next 2 weeks.
-                                        They won't see your event details.
+                                        Create a new link to share your free/busy status. manage access and expiration below.
                                     </p>
                                 </div>
-                                <ShareAvailabilityModal />
+                                <ShareAvailabilityModal onLinkCreated={fetchLinks} />
                             </div>
                         </section>
 
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-white">My Rooms</h2>
-                            <button
-                                onClick={() => setShowCreate(!showCreate)}
-                                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all text-sm"
-                            >
-                                + Create Room
-                            </button>
-                        </div>
-
-                        {/* Create Room Form */}
-                        {showCreate && (
-                            <div className="mb-6 p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
-                                <h3 className="text-lg font-semibold text-white mb-4">Create New Room</h3>
-                                <div className="flex gap-4">
-                                    <input
-                                        type="text"
-                                        value={newRoomName}
-                                        onChange={(e) => setNewRoomName(e.target.value)}
-                                        placeholder="Room name"
-                                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    />
-                                    <button
-                                        onClick={createRoom}
-                                        className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-all"
-                                    >
-                                        Create
-                                    </button>
+                        {/* Active Links List */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-white mb-6">Active Shared Links</h2>
+                            {loadingLinks ? (
+                                <div className="space-y-4">
+                                    {[1, 2].map(i => (
+                                        <div key={i} className="h-32 bg-white/5 rounded-2xl animate-pulse"></div>
+                                    ))}
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Join Room Input */}
-                        <div className="mb-6 flex gap-2">
-                            <input
-                                type="text"
-                                value={inviteCode}
-                                onChange={(e) => setInviteCode(e.target.value)}
-                                placeholder="Enter invite code to join"
-                                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            <button
-                                onClick={joinRoom}
-                                className="px-6 py-3 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all"
-                            >
-                                Join
-                            </button>
-                        </div>
-
-                        {/* Rooms List */}
-                        {loadingRooms ? (
-                            <RoomsSkeleton />
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {rooms.map((room) => (
-                                    <Link
-                                        key={room.id}
-                                        href={`/rooms/${room.id}`}
-                                        className="p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 hover:border-purple-500/50 transition-all group"
-                                    >
-                                        <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-400 transition-colors">
-                                            {room.name}
-                                        </h3>
-                                        {room.description && (
-                                            <p className="text-white/60 mb-4 line-clamp-2">{room.description}</p>
-                                        )}
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full flex items-center gap-1">
-                                                <Users className="w-3 h-3" />
-                                                {room.role}
-                                            </span>
+                            ) : (
+                                <div className="space-y-4">
+                                    {shareLinks.length === 0 ? (
+                                        <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/10">
+                                            <p className="text-white/60">No active shared links. Create one above!</p>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    copyRoomLink(room.inviteCode, room.id);
-                                                }}
-                                                className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                                title="Copy invite link"
+                                    ) : (
+                                        shareLinks.map((link) => (
+                                            <div
+                                                key={link.id}
+                                                className="p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex flex-col md:flex-row md:items-center justify-between gap-4"
                                             >
-                                                {copiedRoomId === room.id ? (
-                                                    <Check className="w-4 h-4 text-green-400" />
-                                                ) : (
-                                                    <Copy className="w-4 h-4" />
-                                                )}
-                                            </button>
-                                            <span className="text-white/40 text-sm group-hover:text-white transition-colors">View →</span>
-                                        </div>
-                                    </Link>
-                                ))}
-                                {rooms.length === 0 && (
-                                    <div className="col-span-full text-center py-12 bg-white/5 rounded-2xl border border-white/10">
-                                        <p className="text-white/60">No rooms yet. Create one or join with an invite code!</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="text-lg font-semibold text-white">
+                                                            {link.name || "Untitled Link"}
+                                                        </h3>
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${link.visibility === 'public' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                                                            link.visibility === 'authenticated' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                                                                'bg-orange-500/20 text-orange-300 border-orange-500/30'
+                                                            }`}>
+                                                            {link.visibility === 'public' ? 'Public' :
+                                                                link.visibility === 'authenticated' ? 'Logged In' : 'Restricted'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm text-white/60">
+                                                            <span className="text-white/40">Dates:</span>{" "}
+                                                            {new Date(link.startDate).toLocaleDateString()} — {new Date(link.endDate).toLocaleDateString()}
+                                                        </p>
+                                                        {link.visibility === 'restricted' && link.allowedEmails?.length > 0 && (
+                                                            <p className="text-sm text-white/60">
+                                                                <span className="text-white/40">Access:</span>{" "}
+                                                                {link.allowedEmails.join(", ")}
+                                                            </p>
+                                                        )}
+                                                        <p className="text-xs text-white/40 mt-2">
+                                                            Created {new Date(link.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => copyShareLink(link.token, link.id)}
+                                                        className="p-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-colors flex items-center gap-2 text-sm"
+                                                        title="Copy Link"
+                                                    >
+                                                        {copiedLinkId === link.id ? (
+                                                            <>
+                                                                <Check className="w-4 h-4 text-green-400" />
+                                                                <span className="text-green-400">Copied</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Copy className="w-4 h-4" />
+                                                                <span>Copy</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+
+                                                    <button
+                                                        onClick={(e) => deleteLink(link.id, e)}
+                                                        className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-colors text-sm px-4"
+                                                        title="Delete Link"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </section>
                     </div>
 
                     {/* Right Column: Connect Calendar */}
@@ -280,7 +245,7 @@ function DashboardContent() {
                                 Calendar Connection
                             </h2>
                             <p className="text-white/60 mb-6 text-sm">
-                                Connect your Google Calendar to share your availability with your groups automatically.
+                                Connect your Google Calendar to share your availability.
                             </p>
 
                             {calendarStatus === "connected" && (

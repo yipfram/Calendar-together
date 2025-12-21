@@ -70,3 +70,45 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+// DELETE: Delete a share link (GDPR: Right to Erasure)
+export async function DELETE(request: NextRequest) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const body = await request.json();
+        const { id } = body;
+
+        if (!id) {
+            return NextResponse.json({ error: "Link ID is required" }, { status: 400 });
+        }
+
+        // Verify ownership before deleting
+        const link = await prisma.availabilityShareLink.findUnique({
+            where: { id },
+        });
+
+        if (!link) {
+            return NextResponse.json({ error: "Link not found" }, { status: 404 });
+        }
+
+        if (link.userId !== session.user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        await prisma.availabilityShareLink.delete({
+            where: { id },
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Failed to delete share link:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

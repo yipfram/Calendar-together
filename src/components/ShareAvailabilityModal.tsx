@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, Copy, Loader2, Check } from "lucide-react";
 
-export function ShareAvailabilityModal() {
+export function ShareAvailabilityModal({ onLinkCreated }: { onLinkCreated?: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [generatedLink, setGeneratedLink] = useState("");
@@ -78,6 +78,7 @@ export function ShareAvailabilityModal() {
                 const data = await res.json();
                 const link = `${window.location.origin}/share/${data.link.token}`;
                 setGeneratedLink(link);
+                if (onLinkCreated) onLinkCreated();
             }
         } catch (error) {
             console.error("Failed to generate link:", error);
