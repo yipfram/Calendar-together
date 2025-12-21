@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { randomBytes } from "crypto";
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -52,9 +53,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Start and End dates are required" }, { status: 400 });
         }
 
+        // Generate secure token
+        const token = randomBytes(32).toString("hex");
+
         const link = await prisma.availabilityShareLink.create({
             data: {
                 userId: session.user.id,
+                token, // Explicitly set token
                 name: name || "My Availability",
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),

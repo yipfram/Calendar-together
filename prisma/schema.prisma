@@ -141,7 +141,7 @@ model EventProposal {
 model AvailabilityShareLink {
   id            String    @id @default(cuid())
   userId        String
-  token         String    @unique @default(cuid())
+  token         String    @unique
   name          String?
   startDate     DateTime
   endDate       DateTime
