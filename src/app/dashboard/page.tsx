@@ -3,10 +3,9 @@
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import Link from "next/link";
 // import { RoomsSkeleton } from "@/components/RoomsSkeleton"; // Deleting rooms usage
 import { ShareAvailabilityModal } from "@/components/ShareAvailabilityModal";
-import { Copy, Check, Users } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 interface Room {
     id: string;
