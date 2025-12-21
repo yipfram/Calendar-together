@@ -136,20 +136,22 @@ export default function SharedAvailabilityPage() {
     const linkStart = new Date(link.startDate);
     const linkEnd = new Date(link.endDate);
 
-    // Current view range
+    // Current weekly view range (Monday–Sunday)
     const currentViewStart = startDate; // Monday
     const currentViewEnd = new Date(startDate);
     currentViewEnd.setDate(currentViewEnd.getDate() + 6); // Sunday
 
-    // PREV allowed if: current view start > link start (with some tolerance for partial weeks? No, strict)
-    // Actually, simple check: is the Monday of the previous week >= link start's Monday?
-    // Or simpler: Is the *end* of the previous week >= link start?
+    // Navigation boundaries:
+    // - "Previous week" is enabled when the end of the previous week
+    //   (Sunday of the week before the current view) is on or after the
+    //   overall link start date.
     const prevWeekEnd = new Date(startDate);
-    prevWeekEnd.setDate(prevWeekEnd.getDate() - 1); // Sunday of prev week
+    prevWeekEnd.setDate(prevWeekEnd.getDate() - 1); // Sunday of previous week
     const canGoPrev = prevWeekEnd >= linkStart;
 
-    // NEXT allowed if: current view end < link end
-    // i.e., start of next week <= link end
+    // - "Next week" is enabled when the start of the next week
+    //   (Monday following the current view) is on or before the
+    //   overall link end date.
     const nextWeekStart = new Date(startDate);
     nextWeekStart.setDate(nextWeekStart.getDate() + 7);
     const canGoNext = nextWeekStart <= linkEnd;
