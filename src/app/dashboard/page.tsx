@@ -81,9 +81,16 @@ function DashboardContent() {
             });
 
             if (res.ok) {
+                const data = await res.json();
                 setNewRoomName("");
                 setShowCreate(false);
-                fetchRooms();
+                // Redirect to the newly created room
+                if (data?.room?.id) {
+                    router.push(`/rooms/${data.room.id}`);
+                } else {
+                    // Fallback: refresh room list if response structure is invalid
+                    fetchRooms();
+                }
             }
         } catch (error) {
             console.error("Failed to create room:", error);
@@ -167,6 +174,7 @@ function DashboardContent() {
                                         type="text"
                                         value={newRoomName}
                                         onChange={(e) => setNewRoomName(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createRoom(); } }}
                                         placeholder="Room name"
                                         className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                     />
@@ -186,6 +194,7 @@ function DashboardContent() {
                                 type="text"
                                 value={inviteCode}
                                 onChange={(e) => setInviteCode(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); joinRoom(); } }}
                                 placeholder="Enter invite code to join"
                                 className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
