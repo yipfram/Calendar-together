@@ -70,6 +70,8 @@ export default function SharedAvailabilityPage() {
                     const linkStart = new Date(jsonData.link.startDate);
                     setStartDate(getMonday(linkStart));
                     isFirstLoadRef.current = false;
+                    // Scroll to 9 AM after a brief delay to let the DOM render
+                    setTimeout(() => document.getElementById('hour-9')?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100);
                 }
             } else {
                 if (res.status === 401) {
@@ -230,13 +232,14 @@ export default function SharedAvailabilityPage() {
 
             {/* Calendar Grid */}
             <div className="flex-1 overflow-auto custom-scrollbar">
-                <div className="flex min-w-[800px] h-full">
+                <div className="flex min-w-[800px]">
                     {/* Time Column */}
                     <div className="sticky left-0 z-30 bg-slate-950 border-r border-white/10 w-16 flex-shrink-0">
                         <div className="h-12 border-b border-white/10 bg-slate-900/50"></div>
                         {hours.map((hour) => (
                             <div
                                 key={hour}
+                                id={hour === 9 ? 'hour-9' : undefined}
                                 className="h-12 text-[11px] text-slate-500 text-right pr-2 pt-1 border-b border-white/5"
                             >
                                 {hour.toString().padStart(2, '0')}:00
